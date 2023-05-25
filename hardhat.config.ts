@@ -6,22 +6,24 @@ import '@nomiclabs/hardhat-etherscan'
 
 import 'solidity-coverage'
 
-import * as fs from 'fs'
+import env from './env.json'
+import { NetworkUserConfig } from 'hardhat/types'
 
-const mnemonicFileName = process.env.MNEMONIC_FILE ?? `${process.env.HOME}/.secret/testnet-mnemonic.txt`
-let mnemonic = 'test '.repeat(11) + 'junk'
-if (fs.existsSync(mnemonicFileName)) { mnemonic = fs.readFileSync(mnemonicFileName, 'ascii') }
+const mnemonic = env.MNEMONIC
 
-function getNetwork1 (url: string): { url: string, accounts: { mnemonic: string } } {
+const infuraUrl = (name: string): string => `https://${name}.infura.io/v3/${env.INFURA_ID}`
+
+function getNetwork (url: string): NetworkUserConfig {
   return {
     url,
-    accounts: { mnemonic }
+    accounts: {
+      mnemonic
+    }
   }
 }
 
-function getNetwork (name: string): { url: string, accounts: { mnemonic: string } } {
-  return getNetwork1(`https://${name}.infura.io/v3/${process.env.INFURA_ID}`)
-  // return getNetwork1(`wss://${name}.infura.io/ws/v3/${process.env.INFURA_ID}`)
+function getInfuraNetwork (name: string): NetworkUserConfig {
+  return getNetwork(infuraUrl(name))
 }
 
 const optimizedComilerSettings = {
@@ -49,12 +51,13 @@ const config: HardhatUserConfig = {
     }
   },
   networks: {
-    dev: { url: 'http://localhost:8545' },
-    // github action starts localgeth service, for gas calculations
-    localgeth: { url: 'http://localgeth:8545' },
-    goerli: getNetwork('goerli'),
-    sepolia: getNetwork('sepolia'),
-    proxy: getNetwork1('http://localhost:8545')
+    localhost: {
+      url: 'http://localhost:8545/',
+      saveDeployments: false
+    },
+    goerli: getInfuraNetwork('goerli'),
+    bsctest: getNetwork(`https://bsc.getblock.io/${env.GETBLOCK_ID}/testnet/`),
+    mumbai: getNetwork(`https://matic.getblock.io/${env.GETBLOCK_ID}/testnet/`)
   },
   mocha: {
     timeout: 10000
